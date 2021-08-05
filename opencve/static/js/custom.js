@@ -41,4 +41,31 @@ $.ajaxSetup({
         });
     });
 
+    // Remove a header row in Webhook integration
+    function removeHeader() {
+        $('.remove-header').off('click').on('click', function() {
+            $(this).parents('.form-header').remove();
+            return false;
+        });
+    }
+    removeHeader();
+
+    // Add a header row in Webhook integration
+    $('#add-header').click(function() {
+        var headers = $(this).prev('#headers');
+        var idx = $(this).data("count") + 1;
+        var html = '<div class="form-group form-header">' +
+                    '<div class="row" id="header-' + idx + '">' +
+                    '<div class="col-md-5"><input class="form-control" id="headers-' + idx + '-name" name="headers-' + idx + '-name" placeholder="Header" required="" type="text"></div>' +
+                    '<div class="col-md-5"><input class="form-control" id="headers-' + idx + '-value" name="headers-' + idx + '-value" placeholder="Value" required="" type="text"></div>' +
+                    '<div class="col-md-1"><button class="remove-header btn btn-default"><i class="fa fa-trash"></i></button></div>' +
+                    '</div>' +
+                    '</div>';
+
+        headers.append(html);
+        removeHeader();
+        $(this).data("count", idx);
+        return false;
+    });
+
 })(window.jQuery);

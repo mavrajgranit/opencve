@@ -1,0 +1,67 @@
+{% extends "profiles/base_profile.html" %}
+
+{% block title %}Integrations - {{ super() }}{% endblock %}
+
+{% block content_profile %}
+{% from "flask_user/_macros.html" import render_submit_field %}
+
+<div class="row">
+    <div class="col-lg-3 col-md-3 col-sm-3">
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">New integration</h3>
+            </div>
+            <div class="box-body">
+                <a class="btn btn-block btn-social btn-default" href="{{ url_for('main.add_integration', type='email') }}">
+                    <i class="fa fa-plus"></i> Email
+                  </a>
+                  <a class="btn btn-block btn-social btn-default" href="{{ url_for('main.add_integration', type='webhook') }}">
+                    <i class="fa fa-plus"></i> Webhook
+                  </a>
+                  <a class="btn btn-block btn-social btn-default" href="{{ url_for('main.add_integration', type='slack') }}">
+                    <i class="fa fa-plus"></i> Slack
+                  </a>
+            </div>
+            <div class="box-body">
+              <a class="btn btn-block btn-social btn-default" href="{{ url_for('main.add_integration', type='slack') }}">
+                <i class="fa fa-book"></i> Documentation
+              </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9 col-md-9 col-sm-9">
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">Integrations list</h3>
+            </div>
+            <div class="box-body">
+                {% if integrations.total > 0 %}
+                <ul class="products-list product-list-in-box">
+                    {% for integration in integrations.items %}
+                    <li class="item">
+                      <div class="product-img">
+                        {% set icon = 'img/' + integration.type + '_icon.png' %}
+                        <img src="{{ url_for('static', filename=icon) }}" alt="{{ integration.type }}">
+                      </div>
+                      <div class="product-info">
+                        <a href="{{ url_for('main.edit_integration', name=integration.name) }}" class="product-title">{{ integration.name }} ({{ integration.type }})
+                            {% if integration.enabled %}
+                            <span class="label label-success pull-right">Enabled</span></a>
+                            {% else %}
+                            <span class="label label-danger pull-right">Disabled</span></a>
+                            {% endif %}
+                        <span class="product-description">Last use 10 minutes ago</span>
+                      </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="alert alert-info">No integration yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

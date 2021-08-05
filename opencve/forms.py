@@ -1,4 +1,5 @@
 from flask import current_app as app
+from sqlalchemy.sql.sqltypes import INT, String
 from flask_login import current_user
 from flask_user.forms import unique_email_validator
 from flask_wtf import FlaskForm
@@ -9,10 +10,14 @@ from wtforms import (
     SelectField,
     StringField,
     SubmitField,
+    FieldList,
+    FormField,
     validators,
+    ValidationError,
 )
 
-from opencve.constants import CVSS_SCORES, FREQUENCIES_TYPES
+from opencve.constants import CVSS_SCORES, FREQUENCIES_TYPES, INTEGRATIONS_TYPES
+from opencve.models.integrations import Integration
 
 
 class ChangePasswordForm(FlaskForm):
@@ -110,3 +115,52 @@ class TagForm(FlaskForm):
         default="#000000",
     )
     submit = SubmitField("Save")
+
+
+class IntegrationForm(FlaskForm):
+    name = StringField(
+        "Name",
+        validators=[
+            validators.DataRequired("Name is required"),
+            validators.Regexp(
+                "^[a-zA-Z0-9\-_ ]+$",
+                message="Only alphanumeric, dash, underscore characters and spaces are accepted",
+            ),
+        ],
+    )
+    type = SelectField("Type", choices=INTEGRATIONS_TYPES)
+    enabled = BooleanField("Enabled", default=True)
+    report = BooleanField("Report")
+    alert_filters = FormField(FiltersNotificationForm)
+    submit = SubmitField("Save")
+
+
+class KeyValueForm(FlaskForm):
+    class Meta:
+        csrf = False
+
+    name = StringField(validators=[validators.DataRequired("Name is required")])
+    value = StringField(validators=[validators.DataRequired("Value is required")])
+
+
+class EmailIntegration(IntegrationForm):
+    pass
+
+
+class WebhookIntegration(IntegrationForm):
+    url = StringField(
+        "Url",
+        validators=[
+            validators.DataRequired("Url is required"),
+        ],
+    )
+    headers = FieldList(FormField(KeyValueForm))
+
+
+class SlackIntegration(IntegrationForm):
+    url = StringField(
+        "Url",
+        validators=[
+            validators.DataRequired("Url is required"),
+        ],
+    )

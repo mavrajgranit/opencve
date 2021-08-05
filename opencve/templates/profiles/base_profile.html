@@ -28,6 +28,9 @@
                 <li class="{% if is_active('main.notifications') %}active{% endif %}">
                     <a href="{{ url_for('main.notifications') }}">Notifications</a>
                 </li>
+                <li class="{% if is_active('main.integrations,main.add_integration,main.edit_integration') %}active{% endif %}">
+                    <a href="{{ url_for('main.integrations') }}">Integrations</a>
+                </li>
                 <li class="{% if is_active('main.settings,user.edit_user_profile,user.change_password') %}active{% endif %}">
                     <a href="{{ url_for('user.edit_user_profile') }}">Settings</a>
                 </li>

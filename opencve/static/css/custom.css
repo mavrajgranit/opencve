@@ -300,3 +300,12 @@ pre.plainJSON{
 .change-collapsed[aria-expanded=false] .fa-arrow-circle-o-up {
   display: none;
 }
+
+.products-list .product-img img {
+  width: 45px;
+  height: 45px;
+}
+
+.form-header {
+  margin-bottom: 5px;
+}

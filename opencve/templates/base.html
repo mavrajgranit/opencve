@@ -124,7 +124,7 @@
     </aside>
 
     <div class="content-wrapper">
-        {% if request.endpoint not in ['main.notifications', 'main.tags', 'main.edit_tag', 'main.settings'] %}
+        {% if request.endpoint not in ['main.notifications', 'main.tags', 'main.edit_tag', 'main.settings', 'main.integrations', 'main.add_integration', 'main.edit_integration'] %}
         {% include 'flash_messages.html' %}
         {% endif %}
         {% block content %}{% endblock %}

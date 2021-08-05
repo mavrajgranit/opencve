@@ -74,6 +74,7 @@ class Config(object):
     ALERTS_PER_PAGE = config.getint("core", "alerts_per_page", fallback=20)
     TAGS_PER_PAGE = config.getint("core", "tags_per_page", fallback=20)
     ACTIVITIES_PER_PAGE = config.getint("core", "activities_per_page", fallback=20)
+    INTEGRATIONS_PER_PAGE = config.getint("core", "integrations_per_page", fallback=20)
 
     # ReCaptcha
     DISPLAY_RECAPTCHA = config.getboolean("core", "display_recaptcha", fallback=False)

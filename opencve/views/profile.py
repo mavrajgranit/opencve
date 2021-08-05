@@ -1,19 +1,29 @@
-from flask import current_app as app
+import importlib
+
+from flask import config, current_app as app
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
+from opencve.controllers.integrations import IntegrationController
 from opencve.controllers.main import main
 from opencve.controllers.tags import UserTagController
 from opencve.models.cve import Cve
+from opencve.models.integrations import Integration
 from opencve.models.tags import CveTag, UserTag
+from opencve.models.users import get_default_filters
 from opencve.extensions import db
 from opencve.forms import (
     ChangeEmailForm,
     ChangePasswordForm,
     FiltersNotificationForm,
+    IntegrationForm,
     MailNotificationsForm,
     TagForm,
 )
+
+
+def integration_exists(name):
+    return Integration.query.filter_by(user_id=current_user.id, name=name).first()
 
 
 @main.route("/account/subscriptions", methods=["GET"])
@@ -203,3 +213,166 @@ def delete_tag(tag):
         db.session.commit()
         flash(f"The tag {tag.name} has been deleted.", "success")
         return redirect(url_for("main.tags"))
+
+
+@main.route("/account/integrations", methods=["GET"])
+@login_required
+def integrations():
+    integrations, _, pagination = IntegrationController.list(
+        {**request.args, "user_id": current_user.id}
+    )
+    return render_template("profiles/integrations.html", integrations=integrations)
+
+
+@main.route("/account/integrations/add", methods=["GET", "POST"])
+@login_required
+def add_integration():
+    type = request.args.get("type")
+    if type not in ["email", "webhook", "slack"]:
+        return redirect(url_for("main.integrations"))
+
+    integation_cls = getattr(
+        importlib.import_module("opencve.forms"), f"{type.capitalize()}Integration"
+    )
+    form = integation_cls(type=type)
+
+    if request.method == "POST" and form.validate():
+
+        if integration_exists(form.name.data):
+            flash(f"An integration named '{form.name.data}' already exists.", "error")
+            return render_template(
+                "profiles/integration.html", form=form, type=type, mode="create"
+            )
+
+        # Extract the custom fields and populate the configuration data
+        custom_fields = [
+            k for k in integation_cls.__dict__.keys() if not k.startswith("_")
+        ]
+        configuration = {field: getattr(form, field).data for field in custom_fields}
+
+        # Extract alert filters
+        filters = {
+            "event_types": [],
+            "cvss": form.alert_filters.cvss_score.data,
+        }
+
+        for typ in ["new_cve", "references", "cvss", "cpes", "cwes", "summary"]:
+            if getattr(form.alert_filters, typ).data:
+                filters["event_types"].append(typ)
+
+        integration = Integration(
+            user=current_user,
+            name=form.name.data,
+            type=type,
+            enabled=form.enabled.data,
+            report=form.report.data,
+            alert_filters=filters,
+            configuration=configuration,
+        )
+        db.session.add(integration)
+        db.session.commit()
+
+        flash(
+            f"The integration '{integration.name}' has been successfully added.",
+            "success",
+        )
+        return redirect(url_for("main.integrations", page=request.args.get("page")))
+    else:
+        return render_template(
+            "profiles/integration.html", form=form, type=type, mode="create"
+        )
+
+
+@main.route("/account/integrations/<string:name>", methods=["GET", "POST"])
+@login_required
+def edit_integration(name):
+    integration = IntegrationController.get({"user_id": current_user.id, "name": name})
+
+    # Populate the custom fields
+    if integration.configuration:
+        for key in integration.configuration.keys():
+            setattr(integration, key, integration.configuration.get(key))
+
+    integation_cls = getattr(
+        importlib.import_module("opencve.forms"),
+        f"{integration.type.capitalize()}Integration",
+    )
+
+    # Populate alert filters
+    event_types = integration.alert_filters["event_types"]
+    integration.alert_filters["cvss_score"] = integration.alert_filters.pop("cvss")
+
+    for typ in get_default_filters().get("event_types"):
+        integration.alert_filters[typ] = True if typ in event_types else False
+
+    form = integation_cls(obj=integration)
+
+    if request.method == "POST" and form.validate():
+
+        # Check if new name doesn't already exist
+        if form.name.data != integration.name:
+            if integration_exists(form.name.data):
+                flash(
+                    f"An integration named '{form.name.data}' already exists.", "error"
+                )
+                return render_template(
+                    "profiles/integration.html",
+                    form=form,
+                    type=integration.type,
+                    mode="update",
+                )
+
+        # Extract the custom fields and populate the configuration data
+        custom_fields = [
+            k for k in integation_cls.__dict__.keys() if not k.startswith("_")
+        ]
+        configuration = {field: getattr(form, field).data for field in custom_fields}
+
+        # Extract alert filters
+        filters = {
+            "event_types": [],
+            "cvss": form.alert_filters.cvss_score.data,
+        }
+
+        for typ in get_default_filters().get("event_types"):
+            if getattr(form.alert_filters, typ).data:
+                filters["event_types"].append(typ)
+
+        integration.name = form.name.data
+        integration.enabled = form.enabled.data
+        integration.report = form.report.data
+        integration.configuration = configuration
+        integration.alert_filters = filters
+        db.session.commit()
+
+        flash(
+            f"The integration {integration.name} has been successfully updated.",
+            "success",
+        )
+        return redirect(url_for("main.edit_integration", name=integration.name))
+
+    return render_template(
+        "profiles/integration.html",
+        form=form,
+        type=integration.type,
+        mode="update",
+    )
+
+
+@main.route("/account/integrations/<string:name>/delete", methods=["GET", "POST"])
+@login_required
+def delete_integration(name):
+    integration = IntegrationController.get({"user_id": current_user.id, "name": name})
+
+    # Confirmation page
+    if request.method == "GET":
+        return render_template(
+            "profiles/delete_integration.html", integration=integration
+        )
+
+    # Delete the tag
+    else:
+        db.session.delete(integration)
+        db.session.commit()
+        flash(f"The integration '{integration.name}' has been deleted.", "success")
+        return redirect(url_for("main.integrations"))

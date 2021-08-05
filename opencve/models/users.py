@@ -50,6 +50,7 @@ class User(BaseModel, UserMixin):
     reports = db.relationship("Report", back_populates="user")
     tags = db.relationship("UserTag", back_populates="user")
     cve_tags = db.relationship("CveTag", back_populates="user")
+    integrations = db.relationship("Integration", back_populates="user")
 
     @property
     def is_confirmed(self):

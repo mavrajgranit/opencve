@@ -1,0 +1,35 @@
+{{ render_field(form.url, tabindex=1) }}
+
+<div id="headers">
+    {% if form.headers %}
+    <label class="control-label">Headers</label>
+
+    {% for header in form.headers %}
+    <div class="form-group form-header {% if header.form.name.errors or header.form.value.errors %}has-error{% endif %}">
+        <div class="row">
+
+            <div class="col-md-5">
+                {{ header.form.name(class_='form-control', placeholder='Header') }}
+                {% if header.form.name.errors %}
+                {% for e in header.form.name.errors %}
+                <p class="help-block">{{ e }}</p>
+                {% endfor %}
+                {% endif %}
+            </div>
+            <div class="col-md-5">
+                {{ header.form.value(class_='form-control', placeholder='Value') }}
+                {% if header.form.value.errors %}
+                {% for e in header.form.value.errors %}
+                <p class="help-block">{{ e }}</p>
+                {% endfor %}
+                {% endif %}
+            </div>
+            <div class="col-md-1">
+                <button class="remove-header btn btn-default"><i class="fa fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+<button class="btn btn-default" id="add-header" data-count="{{ form.headers|length }}"><i class="fa fa-plus"></i> Add headers</button>
