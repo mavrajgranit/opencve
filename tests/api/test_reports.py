@@ -19,8 +19,9 @@ def test_list_reports_authentication(client, create_user):
     assert response.status_code == 200
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_list_reports(mock_send, client, create_user, handle_events):
+def test_list_reports(mock_send, mock_webhook_send, client, create_user, handle_events):
     user = create_user("opencve")
     response = client.login("opencve").get("/api/reports")
     assert response.status_code == 200
@@ -53,8 +54,9 @@ def test_get_report_not_found(client, create_user):
     assert response.json == {"message": "Not found."}
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_get_report(mock_send, client, create_user, handle_events):
+def test_get_report(mock_send, mock_webhook_send, client, create_user, handle_events):
     user = create_user("opencve")
     handle_events("modified_cves/CVE-2018-18074.json")
     user.vendors.append(Vendor.query.filter_by(name="canonical").first())

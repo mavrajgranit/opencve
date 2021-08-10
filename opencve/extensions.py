@@ -10,6 +10,7 @@ from flask_user.forms import EditUserProfileForm, RegisterForm, unique_email_val
 from flask_wtf import RecaptchaField
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
+import requests
 from wtforms import validators, StringField
 
 
@@ -85,6 +86,35 @@ class FlaskCelery(Celery):
         self.conf.update(app.config.get("CELERY_CONF", {}))
 
 
+class Webhook:
+    """
+    A Webhook class which is used to send a Webhook message to a specified url and handle and log errors.
+    """
+
+    def send_message(self, url, message, logger):
+        """
+        Sends a (JSON) dict message to the specified URL and raises an error in case the response status code is not 2xx
+        Exceptions are handled and logged.
+        :param url: Url where to send the message to
+        :param message: Message to be sent. Needs to be JSON serializable
+        :param logger: Logger to be used for logging errors
+        :return: The request response or None if an exception was raised
+        """
+        try:
+            response = requests.post(url, json=message)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.HTTPError as http_error:
+            error_response = http_error.response
+            logger.error("POST request to '{}' failed due to '{}'. Error message: '{}'".format(url, error_response.text, str(http_error)))
+        except requests.exceptions.ConnectionError as connection_error:
+            logger.error("Unable to connect to '{}'! Error message: '{}'".format(url, str(connection_error)))
+        except requests.exceptions.Timeout as timeout_error:
+            logger.error("Connection to '{}' timed out! Error message: '{}':".format(url, str(timeout_error)))
+        except requests.exceptions.RequestException as request_exception:
+            logger.error("An unexpected error occurred while issuing a POST request to '{}'! Error message: '{}'".format(url, str(request_exception)))
+
+
 # Debug toolbar
 debug_toolbar = DebugToolbarExtension()
 
@@ -115,3 +145,6 @@ cel = FlaskCelery("opencve", include=["opencve.tasks"])
 
 # Flask Limiter
 limiter = Limiter(key_func=lambda: "Remove the default warning")
+
+# Webhook
+webhook = Webhook()

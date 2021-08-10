@@ -18,8 +18,9 @@ def test_metas(app):
     assert metas == {}
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_list(mock_send, app, handle_events, create_user):
+def test_list(mock_send, mock_webhook_send, app, handle_events, create_user):
     handle_events("modified_cves/CVE-2018-18074.json")
 
     user = create_user()
@@ -37,8 +38,9 @@ def test_list(mock_send, app, handle_events, create_user):
     assert reports[0].alerts == Alert.query.filter_by(user_id=user.id).all()
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_list_paginated(mock_send, app, handle_events, create_user):
+def test_list_paginated(mock_send, mock_webhook_send, app, handle_events, create_user):
     old = app.config["REPORTS_PER_PAGE"]
     app.config["REPORTS_PER_PAGE"] = 2
 
@@ -76,8 +78,9 @@ def test_list_paginated(mock_send, app, handle_events, create_user):
     app.config["REPORTS_PER_PAGE"] = old
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_get(mock_send, app, handle_events, create_user):
+def test_get(mock_send, mock_webhook_send, app, handle_events, create_user):
     handle_events("modified_cves/CVE-2018-18074.json")
 
     user = create_user()

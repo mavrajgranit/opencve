@@ -1,12 +1,13 @@
 from collections import OrderedDict
 from datetime import datetime, time
+from typing import List
 
 from celery.utils.log import get_task_logger
 from flask import render_template
 from flask_user import EmailError
 
 from opencve.context import _humanize_filter
-from opencve.extensions import cel, db, user_manager
+from opencve.extensions import cel, db, user_manager, webhook
 from opencve.models.alerts import Alert
 from opencve.models.cve import Cve
 from opencve.models.reports import Report
@@ -111,6 +112,61 @@ def get_vendors_products(alerts):
     return vendors_products
 
 
+def create_webhook_message(report: Report, alerts: List[Alert], user: User):
+    """
+    Creates a Webhook message for a given Report, list of Alerts and user.
+    :param report: Report to summarize inside the Webhook message
+    :param alerts: Alerts to summarize inside the Webhook message
+    :param user: User information to be added to the Webhook message
+    :return: A Webhook message with the summarized Report information
+    """
+    alerts_summary = []
+    webhook_message = {
+        "username": user.username,
+        "created_at": report.created_at.isoformat(),
+        "updated_at": report.updated_at.isoformat(),
+        "public_link": report.public_link,
+        "vendors_products_summary": report.details,
+        "alert_count": len(alerts),
+        "alerts": alerts_summary
+    }
+
+    for alert in alerts:
+        events_summary = []
+        cve = alert.cve
+        events = alert.events
+        alert_summary = {
+            "cve": cve.cve_id,
+            "description": cve.summary,
+            "details": alert.details,
+            "created_at": alert.created_at.isoformat(),
+            "updated_at": alert.updated_at.isoformat(),
+            "vendors": cve.vendors,
+            "cwes": cve.cwes,
+            "cvss2": cve.cvss2,
+            "cvss3": cve.cvss3,
+            "event_count": len(events),
+            "events": events_summary
+        }
+
+        for event in events:
+            event_details = event.details
+
+            if event.type == "references":
+                event_details.setdefault("added", [])
+                event_details.setdefault("changed", [])
+                event_details.setdefault("removed", [])
+            event_summary = {
+                "created_at": event.created_at.isoformat(),
+                "updated_at": event.updated_at.isoformat(),
+                "type": event.type.code,
+                "details": event_details
+            }
+            events_summary.append(event_summary)
+        alerts_summary.append(alert_summary)
+    return webhook_message
+
+
 @cel.task(name="HANDLE_REPORTS")
 def handle_reports():
     cel.app.app_context().push()
@@ -154,6 +210,17 @@ def handle_reports():
                 )
             )
         else:
+            webhook_enabled = cel.app.config.get("GLOBAL_WEBHOOK_ENABLED")
+            if webhook_enabled:
+                # create and send Webhook message (report summary including alert-, event- and user-information)
+                # Webhook messages are only sent when Server_Name is configured and are sent event when an email is not
+                # Webhook post errors are handled in the Webhook class and logged
+                webhook_message = create_webhook_message(report, alerts, user)
+                webhook_url = cel.app.config.get("WEBHOOK_URL")
+                logger.info("Webhook is enabled. Attempting to deliver message to {}...".format(webhook_url))
+                response = webhook.send_message(webhook_url, webhook_message, logger)
+                logger.info("Delivered message: {}".format(True if response is not None else False))
+
             alert_str = "alerts" if len(alerts) > 1 else "alert"
             subject = "{count} {alerts} on {vendors}".format(
                 count=len(alerts),

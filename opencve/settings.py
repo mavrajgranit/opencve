@@ -1,3 +1,4 @@
+import configparser
 import os
 import tempfile
 from pathlib import Path
@@ -137,6 +138,15 @@ class Config(object):
     DEFAULT_MAIL_SENDER = config.get(
         "mail", "email_from", fallback="no-reply@opencve.io"
     )
+
+    # Webhook
+    GLOBAL_WEBHOOK_ENABLED = config.get("webhook", "global_webhook_enabled", fallback=False)
+    WEBHOOK_URL = None
+    if GLOBAL_WEBHOOK_ENABLED:
+        try:
+            WEBHOOK_URL = config.get("webhook", "webhook_url")
+        except configparser.NoOptionError as e:
+            raise ValueError("'webhook_url' needs to be specified in the 'webhook' section when 'global_webhook_enabled' is set to true.")
 
     @staticmethod
     def init_app(app):

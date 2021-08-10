@@ -27,8 +27,9 @@ def test_no_reports(client, login):
     assert b"No report yet." in response.data
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_list_reports(mock_send, client, login, handle_events):
+def test_list_reports(mock_send, mock_webhook_send, client, login, handle_events):
     user = User.query.first()
     handle_events("modified_cves/CVE-2018-18074.json")
     user.vendors.append(Vendor.query.filter_by(name="canonical").first())
@@ -46,8 +47,9 @@ def test_list_reports(mock_send, client, login, handle_events):
     db.session.commit()
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_get_report(mock_send, client, login, handle_events):
+def test_get_report(mock_send, mock_webhook_send, client, login, handle_events):
     user = User.query.first()
     handle_events("modified_cves/CVE-2018-18074.json")
     user.vendors.append(Vendor.query.filter_by(name="canonical").first())

@@ -9,8 +9,9 @@ from opencve.tasks.alerts import handle_alerts
 from opencve.tasks.reports import handle_reports
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_list_alerts_authentication(mock_send, client, create_user, handle_events):
+def test_list_alerts_authentication(mock_send, mock_webhook_send, client, create_user, handle_events):
     user = create_user("opencve")
     handle_events("modified_cves/CVE-2018-18074.json")
     user.vendors.append(Vendor.query.filter_by(name="canonical").first())
@@ -33,8 +34,9 @@ def test_list_alerts_authentication(mock_send, client, create_user, handle_event
     assert response.status_code == 200
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_list_alerts(mock_send, client, create_user, create_cve, handle_events):
+def test_list_alerts(mock_send, mock_webhook_send, client, create_user, create_cve, handle_events):
     create_cve("CVE-2018-18074")
     handle_events("modified_cves/CVE-2018-18074_cvss.json")
     user = create_user("opencve")
@@ -59,8 +61,9 @@ def test_list_alerts(mock_send, client, create_user, create_cve, handle_events):
     ]
 
 
+@patch("opencve.tasks.reports.webhook.send_message")
 @patch("opencve.tasks.reports.user_manager.email_manager.send_user_report")
-def test_get_alert(mock_send, client, create_user, create_cve, handle_events):
+def test_get_alert(mock_send, mock_webhook_send, client, create_user, create_cve, handle_events):
     create_cve("CVE-2018-18074")
     handle_events("modified_cves/CVE-2018-18074_cvss.json")
     user = create_user("opencve")
