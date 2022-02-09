@@ -1,6 +1,6 @@
 from flask import current_app as app
 from flask_user import UserMixin
-from sqlalchemy.sql import expression
+from sqlalchemy.sql import expression, func
 from sqlalchemy_utils import ChoiceType, JSONType
 
 from opencve.constants import FREQUENCIES_TYPES
@@ -38,7 +38,7 @@ class User(BaseModel, UserMixin):
 
     # User email information
     email = db.Column(db.String(255), nullable=False, unique=True)
-    email_confirmed_at = db.Column(db.DateTime(timezone=True))
+    email_confirmed_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     # Notification parameters
     enable_notifications = db.Column(
