@@ -202,11 +202,14 @@ class Config(object):
 class ProdConfig(Config):
     ENV = "prod"
     DEBUG = False
+    #Quick and dirty fix for easy User Creation
+    WTF_CSRF_ENABLED = False
 
 
 class DevConfig(Config):
     ENV = "development"
     DEBUG = True
+    WTF_CSRF_ENABLED = False
     DEBUG_TB_INTERCEPT_REDIRECTS = False
 
     @staticmethod
