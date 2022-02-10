@@ -89,7 +89,10 @@ class Config(object):
     USER_APP_NAME = "OpenCVE.io"
     USER_ENABLE_CHANGE_USERNAME = False
     USER_ENABLE_MULTIPLE_EMAILS = True
-    USER_AUTO_LOGIN_AFTER_CONFIRM = False
+    USER_ENABLE_LOGIN_WITHOUT_CONFIRM_EMAIL = True
+    USER_ENABLE_CONFIRM_EMAIL=False
+    USER_AUTO_LOGIN_AFTER_REGISTER=True
+    
 
     # Flask-User redirect pages
     USER_AFTER_CHANGE_PASSWORD_ENDPOINT = "user.login"
@@ -202,11 +205,14 @@ class Config(object):
 class ProdConfig(Config):
     ENV = "prod"
     DEBUG = False
+    #Quick and dirty fix for easy User Creation
+    WTF_CSRF_ENABLED = False
 
 
 class DevConfig(Config):
     ENV = "development"
     DEBUG = True
+    WTF_CSRF_ENABLED = False
     DEBUG_TB_INTERCEPT_REDIRECTS = False
 
     @staticmethod
