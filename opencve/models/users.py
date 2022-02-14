@@ -1,12 +1,12 @@
 from flask import current_app as app
 from flask_user import UserMixin
-from sqlalchemy.sql import expression, func
+from sqlalchemy.sql import expression
 from sqlalchemy_utils import ChoiceType, JSONType
 
 from opencve.constants import FREQUENCIES_TYPES
 from opencve.extensions import db
 from opencve.models import BaseModel, users_products, users_vendors
-
+from datetime import datetime
 
 def get_default_filters():
     return {
@@ -38,7 +38,7 @@ class User(BaseModel, UserMixin):
 
     # User email information
     email = db.Column(db.String(255), nullable=False, unique=True)
-    email_confirmed_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    email_confirmed_at = db.Column(db.DateTime(timezone=True), default=datetime.utcnow())
 
     # Notification parameters
     enable_notifications = db.Column(
