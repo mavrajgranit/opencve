@@ -10,7 +10,7 @@ from datetime import datetime
 
 def get_default_filters():
     return {
-        "cvss": 0,
+        "cvss": 7,
         "event_types": [
             "new_cve",
             "first_time",
